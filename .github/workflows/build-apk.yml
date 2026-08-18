@@ -23,11 +23,14 @@ jobs:
       - name: Configurar Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Fixar versão do Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
       - name: Compilar APK de debug
         working-directory: android
-        run: |
-          chmod +x gradlew 2>/dev/null || true
-          if [ -f gradlew ]; then ./gradlew assembleDebug --no-daemon; else gradle assembleDebug --no-daemon; fi
+        run: gradle assembleDebug --no-daemon
 
       - name: Publicar APK
         uses: actions/upload-artifact@v4
