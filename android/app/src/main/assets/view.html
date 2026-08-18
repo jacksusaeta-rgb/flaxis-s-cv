@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flaxis · Visualizador</title>
+<link rel="icon" href="icon-192.png" type="image/png">
+<meta name="theme-color" content="#0D1117">
+<!--
+  VISUALIZADOR LEVE
+  ------------------
+  Este ficheiro NÃO carrega o Supabase SDK nem o resto da app.
+  Ele só lê o parâmetro ?src= (URL pública do Storage) e ?type=
+  e mostra a mídia em ecrã cheio, como se tivesses aberto a
+  imagem/vídeo directamente no navegador.
+
+  Isto poupa dados e memória porque:
+  - Não carrega ~200kb de SDK/JS da app principal
+  - Não faz nenhuma query ao banco, só busca o ficheiro
+  - Pode ser partilhado como link direto (WhatsApp, etc.)
+  - É cacheável pelo browser/service worker isoladamente
+-->
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%; background: #050708;
+    overflow: hidden; touch-action: none;
+    font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+  }
+  svg.ic { width: 19px; height: 19px; stroke: #EDF0F3; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  #stage {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 30%, rgba(75,123,209,.10), transparent 60%), #050708;
+  }
+  #media {
+    max-width: 100vw; max-height: 100vh;
+    touch-action: pinch-zoom pan-x pan-y;
+    transition: transform .15s ease-out;
+    transform-origin: center center;
+  }
+  img#media { object-fit: contain; }
+  video#media { object-fit: contain; }
+  #bar {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: max(10px, env(safe-area-inset-top)) 14px 10px;
+    background: linear-gradient(to bottom, rgba(0,0,0,.6), transparent);
+    z-index: 5;
+  }
+  #bar button {
+    background: rgba(255,255,255,.10); border: none;
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #loading {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: #7C8A99; font-size: 13px; letter-spacing: .3px;
+  }
+  #err {
+    position: fixed; inset: 0; display: none; flex-direction: column;
+    align-items: center; justify-content: center; color: #7C8A99; gap: 10px; padding: 20px; text-align: center; font-size: 13px;
+  }
+</style>
+</head>
+<body>
+  <div id="bar">
+    <button onclick="history.length>1?history.back():window.close()"><svg class="ic" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button id="dl"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5"/><path d="M4 19h16"/></svg></button>
+  </div>
+  <div id="stage">
+    <div id="loading">A carregar…</div>
+  </div>
+  <div id="err">
+    <div>Não foi possível carregar esta mídia.</div>
+  </div>
+
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  const src = params.get('src');
+  const type = params.get('type') || 'image';
+  const stage = document.getElementById('stage');
+  const loading = document.getElementById('loading');
+  const errBox = document.getElementById('err');
+
+  if (!src) {
+    loading.remove();
+    errBox.style.display = 'flex';
+    errBox.textContent = 'Nenhuma mídia especificada (?src=...)';
+  } else {
+    let el;
+    if (type === 'video') {
+      el = document.createElement('video');
+      el.controls = true;
+      el.autoplay = true;
+      el.playsInline = true;
+    } else {
+      el = document.createElement('img');
+    }
+    el.id = 'media';
+    el.src = src;
+    el.onload = el.onloadeddata = () => loading.remove();
+    el.onerror = () => {
+      loading.remove();
+      errBox.style.display = 'flex';
+    };
+    stage.appendChild(el);
+
+    document.getElementById('dl').onclick = () => {
+      const a = document.createElement('a');
+      a.href = src;
+      a.download = '';
+      a.target = '_blank';
+      a.click();
+    };
+
+    // Pinch-to-zoom simples e pan (só para imagens)
+    if (type !== 'video') {
+      let scale = 1, startDist = 0, originX = 0, originY = 0, panX = 0, panY = 0, lastX = 0, lastY = 0, dragging = false;
+      function dist(t) { return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
+      stage.addEventListener('touchstart', e => {
+        if (e.touches.length === 2) { startDist = dist(e.touches); }
+        else if (e.touches.length === 1 && scale > 1) { dragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; }
+      });
+      stage.addEventListener('touchmove', e => {
+        if (e.touches.length === 2 && startDist) {
+          const d = dist(e.touches);
+          scale = Math.min(4, Math.max(1, scale * (d / startDist)));
+          startDist = d;
+          el.style.transform = `scale(${scale}) translate(${panX}px, ${panY}px)`;
+        } else if (dragging) {
+          panX += (e.touches[0].clientX - lastX) / scale;
+          panY += (e.touches[0].clientY - lastY) / scale;
+          lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+          el.style.transform = `scale(${scale}) translate(${panX}px, ${panY}px)`;
+        }
+      });
+      stage.addEventListener('touchend', e => {
+        if (e.touches.length === 0) { dragging = false; startDist = 0; if (scale <= 1) { scale = 1; panX = 0; panY = 0; el.style.transform = ''; } }
+      });
+      el.addEventListener('dblclick', () => {
+        scale = scale > 1 ? 1 : 2; panX = 0; panY = 0;
+        el.style.transform = scale > 1 ? `scale(${scale})` : '';
+      });
+    }
+  }
+})();
+</script>
+</body>
+</html>

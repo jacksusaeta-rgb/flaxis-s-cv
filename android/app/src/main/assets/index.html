@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Flaxis S CV</title>
+<meta name="theme-color" content="#0B0F14">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<style>
+/* ============================================================
+   FLAXIS S CV — design tokens
+   bg #0B0F14 · surface #131A21 · surface-alt #1B242C
+   accent (assinatura) #E8A33D (âmbar) · accent2 #5B8DEF (azul)
+   texto #ECEFF3 · muted #7C8894 · danger #E5484D
+   ============================================================ */
+:root{
+  --bg:#0A0E13; --surface:#12181F; --surface-alt:#1A222B; --surface-hi:#222B35;
+  --accent:#C9A24B; --accent-dim:#8A6F2E; --accent2:#4B7BD1; --text:#EDF0F3; --muted:#7C8A99; --danger:#D65B5B;
+  --radius:16px; --safe-top:env(safe-area-inset-top); --safe-bottom:env(safe-area-inset-bottom);
+  --line:rgba(255,255,255,.06);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%; margin:0;}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:"Inter",-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;
+  overscroll-behavior:none; user-select:none; -webkit-font-smoothing:antialiased;
+  letter-spacing:.1px;
+}
+input,textarea{user-select:text;}
+button{font-family:inherit; cursor:pointer;}
+img,video{max-width:100%;}
+.hidden{display:none !important;}
+::-webkit-scrollbar{display:none;}
+svg.ic{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; display:block;}
+
+/* ---------- FUNDO ANIMADO (rede de nós, estilo circuito) ---------- */
+#bgfx{position:fixed; inset:0; z-index:-1; background:var(--bg);}
+@media (prefers-reduced-motion: reduce){ #bgfx{ display:none; } }
+
+/* ---------- AUTH ---------- */
+#authScreen{
+  position:fixed; inset:0; display:flex; flex-direction:column; justify-content:center;
+  padding:32px 24px; gap:22px;
+  background:linear-gradient(180deg, rgba(10,14,19,.35) 0%, rgba(10,14,19,.75) 55%, var(--bg) 100%);
+}
+.brand{display:flex; align-items:baseline; gap:8px;}
+.brand .mark{width:14px; height:26px; background:var(--accent); border-radius:3px; transform:skewX(-12deg);}
+.brand h1{font-size:30px; margin:0; letter-spacing:-.5px; font-weight:800;}
+.brand span{color:var(--muted); font-size:13px; letter-spacing:2px; text-transform:uppercase;}
+.field{
+  background:var(--surface); border:1px solid var(--surface-hi); border-radius:12px;
+  padding:14px 16px; color:var(--text); font-size:15px; width:100%; outline:none;
+}
+.field:focus{border-color:var(--accent);}
+.btn-primary{
+  background:var(--accent); color:#1a1206; border:none; border-radius:12px;
+  padding:15px; font-size:15px; font-weight:700; width:100%;
+}
+.btn-ghost{background:transparent; color:var(--accent2); border:none; padding:10px; font-size:14px;}
+#authErr{color:var(--danger); font-size:13px; min-height:16px;}
+
+/* ---------- APP SHELL ---------- */
+#app{position:fixed; inset:0; display:flex; flex-direction:column;}
+header.topbar{
+  padding:calc(10px + var(--safe-top)) 16px 10px; display:flex; align-items:center;
+  justify-content:space-between; background:rgba(10,14,19,.72); backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px); border-bottom:1px solid var(--line);
+  z-index:10;
+}
+header.topbar .brand h1{font-size:18px;}
+.avatar{
+  width:34px; height:34px; border-radius:50%; object-fit:cover; background:var(--surface-hi);
+  border:1px solid var(--line);
+}
+main#screens{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; background:transparent;}
+.screen{min-height:100%; padding-bottom:24px;}
+
+nav.bottomnav{
+  display:flex; background:rgba(18,24,31,.82); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);
+  padding-bottom:var(--safe-bottom); position:relative; z-index:10;
+}
+nav.bottomnav button{
+  flex:1; background:none; border:none; color:var(--muted); padding:10px 0 8px;
+  display:flex; flex-direction:column; align-items:center; gap:4px; font-size:10px;
+  letter-spacing:.3px; text-transform:uppercase; font-weight:600;
+}
+nav.bottomnav button svg.ic{margin:0 auto;}
+nav.bottomnav button.active{color:var(--accent);}
+#navIndicator{
+  position:absolute; top:0; height:2px; background:var(--accent); border-radius:2px;
+  transition:transform .25s cubic-bezier(.4,0,.2,1), width .25s; width:20%; transform:translateX(0);
+}
+
+/* ---------- STORIES BAR ---------- */
+.stories-bar{display:flex; gap:12px; padding:14px 16px; overflow-x:auto;}
+.story-item{display:flex; flex-direction:column; align-items:center; gap:5px; width:62px; flex:none;}
+.story-ring{
+  width:58px; height:58px; border-radius:50%; padding:2.5px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+}
+.story-ring.seen{background:var(--surface-hi);}
+.story-ring img{width:100%; height:100%; border-radius:50%; object-fit:cover; border:2px solid var(--bg);}
+.story-item span{font-size:11px; color:var(--muted); max-width:60px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+/* ---------- FEED ---------- */
+.post-card{
+  margin:0 14px 14px; border-radius:18px; overflow:hidden; background:rgba(18,24,31,.86);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  border:1px solid var(--line); box-shadow:0 8px 22px rgba(0,0,0,.28);
+}
+.post-card:first-child{margin-top:14px;}
+.post-head{display:flex; align-items:center; gap:10px; padding:14px 16px 10px;}
+.post-head .name{font-weight:700; font-size:14px; letter-spacing:.1px;}
+.post-head .time{color:var(--muted); font-size:11.5px; text-transform:uppercase; letter-spacing:.4px;}
+.post-media{width:100%; aspect-ratio:1/1; object-fit:cover; background:var(--surface-alt); display:block;}
+.post-actions{display:flex; gap:22px; padding:12px 16px 4px; align-items:center;}
+.post-actions button{background:none; border:none; color:var(--muted); display:flex; align-items:center; gap:6px;}
+.post-actions button.liked{color:var(--danger);}
+.post-actions button span{font-size:12.5px; color:var(--muted); font-weight:600;}
+.post-caption{padding:8px 16px 16px; font-size:13.5px; line-height:1.5; color:var(--text);}
+.post-caption b{margin-right:6px; font-weight:700;}
+
+/* ---------- CHATS ---------- */
+.chat-row{
+  display:flex; align-items:center; gap:12px; padding:11px 16px; border-bottom:1px solid var(--surface);
+}
+.chat-row .avatar{width:48px; height:48px;}
+.chat-row .meta{flex:1; min-width:0;}
+.chat-row .top{display:flex; justify-content:space-between;}
+.chat-row .name{font-weight:600; font-size:15px;}
+.chat-row .time{color:var(--muted); font-size:11px;}
+.chat-row .preview{color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.badge{background:var(--accent); color:#1a1206; font-size:11px; font-weight:700; border-radius:10px; padding:1px 7px; min-width:18px; text-align:center;}
+
+/* ---------- CHAT VIEW ---------- */
+#chatView{position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column; z-index:30;}
+.chat-header{
+  display:flex; align-items:center; gap:10px; padding:calc(10px + var(--safe-top)) 12px 10px;
+  background:var(--surface); border-bottom:1px solid var(--surface-alt);
+}
+.chat-header .name{font-weight:700; font-size:15px;}
+.chat-header .status{font-size:12px; color:var(--muted);}
+.icon-btn{background:none; border:none; color:var(--text); font-size:20px; padding:6px;}
+#msgList{flex:1; overflow-y:auto; padding:14px 12px; display:flex; flex-direction:column; gap:6px;}
+.bubble{
+  max-width:78%; padding:8px 12px; border-radius:16px; font-size:14.5px; line-height:1.35; position:relative;
+}
+.bubble.mine{align-self:flex-end; background:var(--accent); color:#1a1206; border-bottom-right-radius:4px;}
+.bubble.theirs{align-self:flex-start; background:var(--surface-alt); border-bottom-left-radius:4px;}
+.bubble img, .bubble video{border-radius:10px; max-height:280px; object-fit:cover; display:block; margin-bottom:4px; cursor:pointer;}
+.bubble audio{width:220px; max-width:60vw; margin-bottom:2px;}
+.bubble .t{font-size:10px; opacity:.65; text-align:right; margin-top:2px;}
+.chat-input{
+  display:flex; gap:8px; align-items:flex-end; padding:8px 10px calc(8px + var(--safe-bottom));
+  background:var(--surface); border-top:1px solid var(--surface-alt);
+}
+.chat-input textarea{
+  flex:1; background:var(--surface-hi); border:none; border-radius:20px; padding:10px 14px;
+  color:var(--text); font-size:14.5px; resize:none; max-height:100px; outline:none;
+}
+.send-btn{
+  background:var(--accent); color:#1a1206; border:none; width:40px; height:40px; border-radius:50%;
+  font-size:16px; flex:none;
+}
+.icon-round{background:var(--surface-hi); border:none; color:var(--text); width:40px; height:40px; border-radius:50%; font-size:17px; flex:none;}
+
+/* ---------- GENERIC ---------- */
+.section-title{padding:14px 16px 6px; font-size:13px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.6px;}
+.fab{
+  position:fixed; right:18px; bottom:calc(78px + var(--safe-bottom)); width:54px; height:54px; border-radius:50%;
+  background:var(--accent); color:#1a1206; border:none; font-size:24px; box-shadow:0 6px 18px rgba(0,0,0,.4); z-index:15;
+}
+.empty{padding:60px 30px; text-align:center; color:var(--muted); font-size:14px;}
+.modal-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:40; display:flex; align-items:flex-end;}
+.modal-sheet{
+  background:var(--surface); width:100%; border-radius:18px 18px 0 0; padding:18px 18px calc(18px + var(--safe-bottom));
+  max-height:85vh; overflow-y:auto;
+}
+.modal-sheet h3{margin:0 0 14px;}
+.row-select{display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--surface-alt);}
+.row-select input{margin-left:auto;}
+.thumb-preview{width:100%; max-height:260px; object-fit:cover; border-radius:12px; margin-bottom:10px;}
+.spinner{width:22px; height:22px; border:2.5px solid var(--surface-hi); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; margin:20px auto;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.toast{
+  position:fixed; left:50%; bottom:100px; transform:translateX(-50%); background:var(--surface-hi);
+  color:var(--text); padding:10px 18px; border-radius:20px; font-size:13px; z-index:60; opacity:0; transition:opacity .2s;
+}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<canvas id="bgfx"></canvas>
+
+<!-- ===================== AUTH ===================== -->
+<div id="authScreen">
+  <div class="brand"><div class="mark"></div><h1>Flaxis</h1></div>
+  <span style="color:var(--muted); font-size:13px; letter-spacing:1.5px; text-transform:uppercase; margin-top:-14px;">S CV</span>
+
+  <div id="loginForm" style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
+    <input class="field" id="loginEmail" type="email" placeholder="Email" autocomplete="username">
+    <input class="field" id="loginPass" type="password" placeholder="Palavra-passe" autocomplete="current-password">
+    <div id="authErr"></div>
+    <button class="btn-primary" onclick="doLogin()">Entrar</button>
+    <button class="btn-ghost" onclick="toggleAuthMode()">Não tens conta? Criar conta</button>
+  </div>
+
+  <div id="signupForm" class="hidden" style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
+    <input class="field" id="suName" type="text" placeholder="Nome de exibição">
+    <input class="field" id="suUsername" type="text" placeholder="Nome de utilizador (@username)">
+    <input class="field" id="suEmail" type="email" placeholder="Email">
+    <input class="field" id="suPass" type="password" placeholder="Palavra-passe (min. 6 caracteres)">
+    <div id="authErr2"></div>
+    <button class="btn-primary" onclick="doSignup()">Criar conta</button>
+    <button class="btn-ghost" onclick="toggleAuthMode()">Já tens conta? Entrar</button>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div class="brand"><div class="mark"></div><h1>Flaxis</h1></div>
+    <img id="myAvatar" class="avatar" src="" onclick="nav('profile')">
+  </header>
+
+  <main id="screens">
+    <div id="screen-feed" class="screen"></div>
+    <div id="screen-stories" class="screen hidden"></div>
+    <div id="screen-chats" class="screen hidden"></div>
+    <div id="screen-groups" class="screen hidden"></div>
+    <div id="screen-profile" class="screen hidden"></div>
+  </main>
+
+  <button class="fab" id="fabBtn"></button>
+
+  <nav class="bottomnav">
+    <div id="navIndicator"></div>
+    <button data-tab="feed" class="active"><span class="ic-slot" data-icon="feed"></span>Feed</button>
+    <button data-tab="stories"><span class="ic-slot" data-icon="stories"></span>Stories</button>
+    <button data-tab="chats"><span class="ic-slot" data-icon="chats"></span>Chats</button>
+    <button data-tab="groups"><span class="ic-slot" data-icon="groups"></span>Grupos</button>
+    <button data-tab="profile"><span class="ic-slot" data-icon="profile"></span>Perfil</button>
+  </nav>
+</div>
+
+<!-- ===================== CHAT VIEW (overlay) ===================== -->
+<div id="chatView" class="hidden">
+  <div class="chat-header">
+    <button class="icon-btn" onclick="closeChatView()"><span class="ic-slot" data-icon="back"></span></button>
+    <img id="chatAvatar" class="avatar" src="">
+    <div style="flex:1;">
+      <div class="name" id="chatName"></div>
+      <div class="status" id="chatStatus"></div>
+    </div>
+  </div>
+  <div id="msgList"></div>
+  <div class="chat-input">
+    <button class="icon-round" id="attachBtn"><span class="ic-slot" data-icon="attach"></span></button>
+    <textarea id="msgInput" placeholder="Mensagem" rows="1"></textarea>
+    <button class="icon-round" id="micBtn"><span class="ic-slot" data-icon="mic"></span></button>
+    <button class="send-btn" id="sendBtn"><span class="ic-slot" data-icon="send"></span></button>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept="image/*,video/*" class="hidden">
+<div id="toast" class="toast"></div>
+<div id="modalRoot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+/* ============================================================
+   CONFIG — troca pelos dados do TEU projeto Supabase (novo,
+   separado do WhidúFacilita/Elo CV)
+   ============================================================ */
+const SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';
+const SUPABASE_ANON_KEY = 'SUA-CHAVE-ANON-PUBLICA';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let ME = null;           // profile row do utilizador atual
+let currentChat = null;  // chat aberto no momento
+let msgChannel = null;   // subscrição realtime do chat aberto
+let feedPage = 0;
+const PAGE_SIZE = 12;
+
+/* ============================================================
+   ÍCONES — SVG geométricos (sem emojis), traço fino consistente
+   ============================================================ */
+const ICONS = {
+  feed:     `<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>`,
+  stories:  `<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.6"/></svg>`,
+  chats:    `<svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4V5z"/></svg>`,
+  groups:   `<svg class="ic" viewBox="0 0 24 24"><circle cx="8.5" cy="8" r="3"/><circle cx="16" cy="9.5" r="2.4"/><path d="M3 19c0-3 2.5-5 5.5-5S14 16 14 19"/><path d="M14.5 14.5c2.4.2 4 1.9 4 4.5"/></svg>`,
+  profile:  `<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1-4 4-6 7.5-6s6.5 2 7.5 6"/></svg>`,
+  back:     `<svg class="ic" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>`,
+  close:    `<svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>`,
+  attach:   `<svg class="ic" viewBox="0 0 24 24"><path d="M8 12.5l6.5-6.5a3.5 3.5 0 015 5L11 19.5a5.5 5.5 0 01-7.8-7.8L11.5 3.5"/></svg>`,
+  send:     `<svg class="ic" viewBox="0 0 24 24" style="fill:#151008; stroke:none;"><path d="M4 12l16-8-6.5 8L20 20 4 12z"/></svg>`,
+  camera:   `<svg class="ic" viewBox="0 0 24 24"><path d="M4 8h3l1.6-2.4h6.8L17 8h3v11H4V8z"/><circle cx="12" cy="13.5" r="3.4"/></svg>`,
+  heart:    `<svg class="ic" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.7-9.3C.7 7.1 2.6 4 6 4c2 0 3.6 1.1 4.5 2.6C11.4 5.1 13 4 15 4c3.4 0 5.3 3.1 3.7 6.7C19.5 15.4 12 20 12 20z"/></svg>`,
+  comment:  `<svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v10H9l-4 4V5z"/></svg>`,
+  download: `<svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5"/><path d="M4 19h16"/></svg>`,
+  mic:      `<svg class="ic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0"/><path d="M12 18v3"/></svg>`,
+  stop:     `<svg class="ic" viewBox="0 0 24 24" style="fill:#D65B5B; stroke:none;"><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg>`,
+  plus:     `<svg class="ic" viewBox="0 0 24 24" style="width:24px; height:24px; fill:none; stroke:#151008; stroke-width:2.2;"><path d="M12 5v14M5 12h14"/></svg>`
+};
+function renderIcons(root=document){
+  root.querySelectorAll('[data-icon]').forEach(el=>{
+    const name = el.dataset.icon;
+    if(ICONS[name]) el.innerHTML = ICONS[name];
+  });
+}
+renderIcons();
+document.getElementById('fabBtn').innerHTML = ICONS.plus;
+
+/* ============================================================
+   FUNDO ANIMADO — rede de nós estilo circuito, discreta e leve
+   Desenha pontos ligados por linhas finas que derivam devagar,
+   com um pulso periódico a percorrer algumas ligações. Corre a
+   ~30fps e pausa quando o separador não está visível, para não
+   pesar em hardware modesto.
+   ============================================================ */
+(function initBackgroundFX(){
+  const canvas = document.getElementById('bgfx');
+  const ctx = canvas.getContext('2d');
+  let W, H, nodes = [], pulses = [];
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    const count = Math.max(18, Math.min(34, Math.floor((W*H)/34000)));
+    nodes = Array.from({length:count}, ()=>({
+      x: Math.random()*W, y: Math.random()*H,
+      vx: (Math.random()-0.5)*0.12, vy: (Math.random()-0.5)*0.12
+    }));
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function spawnPulse(){
+    if(nodes.length < 2) return;
+    const a = Math.floor(Math.random()*nodes.length);
+    let b = Math.floor(Math.random()*nodes.length);
+    if(b === a) b = (a+1) % nodes.length;
+    pulses.push({ a, b, t:0 });
+  }
+  setInterval(spawnPulse, 2200);
+
+  let last = 0;
+  function frame(ts){
+    if(document.hidden){ requestAnimationFrame(frame); return; }
+    if(ts - last < 33){ requestAnimationFrame(frame); return; } // ~30fps
+    last = ts;
+    ctx.clearRect(0,0,W,H);
+
+    nodes.forEach(n=>{
+      n.x += n.vx; n.y += n.vy;
+      if(n.x < 0 || n.x > W) n.vx *= -1;
+      if(n.y < 0 || n.y > H) n.vy *= -1;
+    });
+
+    const maxDist = Math.min(180, W/5);
+    for(let i=0;i<nodes.length;i++){
+      for(let j=i+1;j<nodes.length;j++){
+        const dx = nodes[i].x-nodes[j].x, dy = nodes[i].y-nodes[j].y;
+        const d = Math.hypot(dx,dy);
+        if(d < maxDist){
+          ctx.strokeStyle = `rgba(201,162,75,${(1-d/maxDist)*0.10})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.stroke();
+        }
+      }
+    }
+    ctx.fillStyle = 'rgba(201,162,75,.35)';
+    nodes.forEach(n=>{ ctx.beginPath(); ctx.arc(n.x,n.y,1.4,0,Math.PI*2); ctx.fill(); });
+
+    pulses = pulses.filter(p=>p.t<=1);
+    pulses.forEach(p=>{
+      const a = nodes[p.a], b = nodes[p.b];
+      if(!a || !b) { p.t = 2; return; }
+      const x = a.x + (b.x-a.x)*p.t, y = a.y + (b.y-a.y)*p.t;
+      ctx.strokeStyle = `rgba(75,123,209,${0.5*(1-p.t)})`;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(x,y); ctx.stroke();
+      ctx.fillStyle = 'rgba(201,162,75,.8)';
+      ctx.beginPath(); ctx.arc(x,y,2,0,Math.PI*2); ctx.fill();
+      p.t += 0.018;
+    });
+
+    requestAnimationFrame(frame);
+  }
+  if(!reduceMotion) requestAnimationFrame(frame);
+  else { resize(); ctx.clearRect(0,0,W,H); }
+})();
+
+/* ============================================================
+   HELPERS GERAIS
+   ============================================================ */
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function timeAgo(iso){
+  const d = (Date.now() - new Date(iso).getTime())/1000;
+  if(d<60) return 'agora';
+  if(d<3600) return Math.floor(d/60)+'min';
+  if(d<86400) return Math.floor(d/3600)+'h';
+  if(d<604800) return Math.floor(d/86400)+'d';
+  return new Date(iso).toLocaleDateString('pt-PT');
+}
+function hhmm(iso){ return new Date(iso).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}); }
+function esc(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* Abre a mídia no visualizador leve (view.html) — não carrega a app
+   inteira, só o ficheiro. Funciona como "abrir no navegador". */
+function openViewer(url, type){
+  window.open(`view.html?src=${encodeURIComponent(url)}&type=${type||'image'}`, '_blank');
+}
+
+/* ============================================================
+   COMPRESSÃO DE IMAGEM (poupa espaço no Storage e na banda larga)
+   Gera 2 versões: full (max 1280px) e thumb (max 300px), ambas
+   em JPEG ~0.75 de qualidade. Nunca guardamos base64 no banco —
+   só a URL pública do Storage.
+   ============================================================ */
+function compressImage(file, maxDim, quality){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = e => img.src = e.target.result;
+    reader.onerror = reject;
+    img.onload = () => {
+      let {width:w, height:h} = img;
+      if(w > h && w > maxDim){ h = h*maxDim/w; w = maxDim; }
+      else if(h > maxDim){ w = w*maxDim/h; h = maxDim; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality);
+    };
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadMedia(file, bucket, pathPrefix){
+  const isVideo = file.type.startsWith('video');
+  const ext = isVideo ? (file.name.split('.').pop() || 'mp4') : 'jpg';
+  const id = crypto.randomUUID();
+  let fullBlob = file, thumbBlob = null;
+
+  if(!isVideo){
+    fullBlob = await compressImage(file, 1280, 0.78);
+    thumbBlob = await compressImage(file, 320, 0.6);
+  }
+
+  const fullPath = `${pathPrefix}/${id}.${ext}`;
+  const { error: e1 } = await sb.storage.from(bucket).upload(fullPath, fullBlob, { contentType: isVideo ? file.type : 'image/jpeg' });
+  if(e1) throw e1;
+  const fullUrl = sb.storage.from(bucket).getPublicUrl(fullPath).data.publicUrl;
+
+  let thumbUrl = fullUrl;
+  if(thumbBlob){
+    const thumbPath = `${pathPrefix}/${id}_thumb.jpg`;
+    const { error: e2 } = await sb.storage.from(bucket).upload(thumbPath, thumbBlob, { contentType: 'image/jpeg' });
+    if(!e2) thumbUrl = sb.storage.from(bucket).getPublicUrl(thumbPath).data.publicUrl;
+  }
+  return { url: fullUrl, thumb: thumbUrl, type: isVideo ? 'video' : 'image', localBlob: fullBlob };
+}
+
+/* ============================================================
+   ARMAZENAMENTO LOCAL PERMANENTE (IndexedDB)
+   ------------------------------------------------------------
+   As mensagens (texto, imagem, vídeo, áudio) ficam guardadas
+   neste dispositivo assim que são enviadas ou recebidas — texto
+   e ficheiro de mídia incluídos (como Blob). O Supabase serve só
+   de "correio": guarda a mensagem apenas até TODOS os membros da
+   conversa confirmarem que já a têm localmente; depois disso a
+   linha e o ficheiro são apagados da nuvem automaticamente.
+   Ou seja: o histórico permanente vive no telemóvel, não no
+   servidor — poupa espaço no Supabase e mantém as conversas
+   privadas fora da nuvem a longo prazo.
+   ============================================================ */
+const idb = (() => {
+  let dbp = null;
+  function open(){
+    if(dbp) return dbp;
+    dbp = new Promise((resolve, reject)=>{
+      const req = indexedDB.open('flaxis-cache', 2);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if(!db.objectStoreNames.contains('kv')) db.createObjectStore('kv');
+        if(!db.objectStoreNames.contains('messages')){
+          const ms = db.createObjectStore('messages', { keyPath:'id' });
+          ms.createIndex('by_chat', 'chat_id');
+        }
+        if(!db.objectStoreNames.contains('mediaBlobs')) db.createObjectStore('mediaBlobs');
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = reject;
+    });
+    return dbp;
+  }
+  return {
+    async get(key){
+      const db = await open();
+      return new Promise(res=>{
+        const tx = db.transaction('kv','readonly').objectStore('kv').get(key);
+        tx.onsuccess = () => res(tx.result || null);
+        tx.onerror = () => res(null);
+      });
+    },
+    async set(key, val){
+      const db = await open();
+      return new Promise(res=>{
+        const tx = db.transaction('kv','readwrite').objectStore('kv').put(val, key);
+        tx.onsuccess = () => res(true);
+        tx.onerror = () => res(false);
+      });
+    },
+    async saveMessage(msg){
+      const db = await open();
+      return new Promise(res=>{
+        const tx = db.transaction('messages','readwrite').objectStore('messages').put(msg);
+        tx.onsuccess = () => res(true);
+        tx.onerror = () => res(false);
+      });
+    },
+    async getMessagesForChat(chatId){
+      const db = await open();
+      return new Promise(res=>{
+        const idx = db.transaction('messages','readonly').objectStore('messages').index('by_chat');
+        const req = idx.getAll(IDBKeyRange.only(chatId));
+        req.onsuccess = () => res((req.result||[]).sort((a,b)=> new Date(a.created_at)-new Date(b.created_at)));
+        req.onerror = () => res([]);
+      });
+    },
+    async saveBlob(id, blob){
+      const db = await open();
+      return new Promise(res=>{
+        const tx = db.transaction('mediaBlobs','readwrite').objectStore('mediaBlobs').put(blob, id);
+        tx.onsuccess = () => res(true);
+        tx.onerror = () => res(false);
+      });
+    },
+    async getBlob(id){
+      const db = await open();
+      return new Promise(res=>{
+        const tx = db.transaction('mediaBlobs','readonly').objectStore('mediaBlobs').get(id);
+        tx.onsuccess = () => res(tx.result || null);
+        tx.onerror = () => res(null);
+      });
+    }
+  };
+})();
+
+/* ============================================================
+   AUTH
+   ============================================================ */
+function toggleAuthMode(){
+  document.getElementById('loginForm').classList.toggle('hidden');
+  document.getElementById('signupForm').classList.toggle('hidden');
+}
+
+async function doSignup(){
+  const name = document.getElementById('suName').value.trim();
+  const username = document.getElementById('suUsername').value.trim().toLowerCase().replace(/\s+/g,'');
+  const email = document.getElementById('suEmail').value.trim();
+  const pass = document.getElementById('suPass').value;
+  const errBox = document.getElementById('authErr2');
+  errBox.textContent = '';
+  if(!name || !username || !email || pass.length < 6){
+    errBox.textContent = 'Preenche todos os campos (palavra-passe min. 6 caracteres).'; return;
+  }
+  const { data, error } = await sb.auth.signUp({ email, password: pass });
+  if(error){ errBox.textContent = error.message; return; }
+  const uid = data.user.id;
+  const { error: pErr } = await sb.from('profiles').insert({ id: uid, username, display_name: name });
+  if(pErr){ errBox.textContent = 'Conta criada, mas falhou o perfil: ' + pErr.message; return; }
+  await bootAfterAuth();
+}
+
+async function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const errBox = document.getElementById('authErr');
+  errBox.textContent = '';
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if(error){ errBox.textContent = error.message; return; }
+  await bootAfterAuth();
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  location.reload();
+}
+
+async function bootAfterAuth(){
+  const { data: { user } } = await sb.auth.getUser();
+  if(!user) return;
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  ME = profile;
+  await sb.from('profiles').update({ is_online: true, last_seen: new Date().toISOString() }).eq('id', ME.id);
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('myAvatar').src = ME.avatar_thumb_url || avatarFallback(ME.display_name);
+  nav('feed');
+  loadFeed();
+  subscribeInbox();
+  resweepPendingDeletions();
+}
+
+function avatarFallback(name){
+  const initial = (name||'?').trim()[0]?.toUpperCase() || '?';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#232E38"/><text x="50%" y="54%" font-size="32" fill="#E8A33D" text-anchor="middle" font-family="sans-serif">${initial}</text></svg>`;
+  return 'data:image/svg+xml;base64,' + btoa(svg);
+}
+
+/* ============================================================
+   NAVEGAÇÃO (tabs inferiores)
+   ============================================================ */
+const TABS = ['feed','stories','chats','groups','profile'];
+function nav(tab){
+  TABS.forEach(t => document.getElementById('screen-'+t).classList.toggle('hidden', t !== tab));
+  document.querySelectorAll('nav.bottomnav button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  const idx = TABS.indexOf(tab);
+  document.getElementById('navIndicator').style.transform = `translateX(${idx*100}%)`;
+  const fab = document.getElementById('fabBtn');
+  fab.classList.toggle('hidden', tab === 'profile');
+  if(tab === 'stories') loadStories();
+  if(tab === 'chats') loadChats();
+  if(tab === 'groups') loadGroups();
+  if(tab === 'profile') loadProfileScreen();
+}
+document.querySelectorAll('nav.bottomnav button').forEach(b=>{
+  b.addEventListener('click', ()=> nav(b.dataset.tab));
+});
+document.getElementById('fabBtn').addEventListener('click', ()=>{
+  const active = document.querySelector('nav.bottomnav button.active').dataset.tab;
+  if(active === 'feed') openNewPostModal();
+  else if(active === 'stories') openNewStoryModal();
+  else if(active === 'chats') openNewChatModal();
+  else if(active === 'groups') openNewGroupModal();
+});
+
+/* ============================================================
+   FEED
+   ============================================================ */
+async function loadFeed(reset=true){
+  const el = document.getElementById('screen-feed');
+  if(reset){ feedPage = 0; el.innerHTML = '<div class="spinner"></div>'; }
+  const from = feedPage*PAGE_SIZE, to = from+PAGE_SIZE-1;
+  const { data: posts, error } = await sb.from('posts')
+    .select('*, profiles(username, display_name, avatar_thumb_url, id)')
+    .order('created_at', { ascending:false }).range(from, to);
+  if(error){ el.innerHTML = `<div class="empty">Erro ao carregar feed.</div>`; return; }
+  if(reset) el.innerHTML = '';
+  if(posts.length === 0 && feedPage === 0){ el.innerHTML = '<div class="empty">Ainda sem publicações.<br>Sê o primeiro a partilhar algo.</div>'; return; }
+  posts.forEach(p => el.appendChild(renderPostCard(p)));
+  feedPage++;
+}
+
+function renderPostCard(p){
+  const div = document.createElement('div');
+  div.className = 'post-card';
+  const author = p.profiles || {};
+  const avatarUrl = author.avatar_thumb_url || avatarFallback(author.display_name);
+  div.innerHTML = `
+    <div class="post-head">
+      <img class="avatar" src="${avatarUrl}">
+      <div>
+        <div class="name">${esc(author.display_name)}</div>
+        <div class="time">${timeAgo(p.created_at)}</div>
+      </div>
+    </div>
+    ${p.media_thumb_url ? `<img class="post-media" loading="lazy" src="${p.media_thumb_url}" data-full="${p.media_url}" data-type="${p.media_type}">` : ''}
+    <div class="post-actions">
+      <button class="likeBtn" data-id="${p.id}">${ICONS.heart}<span>${p.likes_count||0}</span></button>
+      <button class="commentBtn" data-id="${p.id}">${ICONS.comment}<span>${p.comments_count||0}</span></button>
+    </div>
+    ${p.caption ? `<div class="post-caption"><b>${esc(author.display_name)}</b>${esc(p.caption)}</div>` : ''}
+  `;
+  const mediaEl = div.querySelector('.post-media');
+  if(mediaEl) mediaEl.addEventListener('click', ()=> openViewer(mediaEl.dataset.full, mediaEl.dataset.type));
+  div.querySelector('.likeBtn').addEventListener('click', (e)=> toggleLike(p.id, e.currentTarget));
+  div.querySelector('.commentBtn').addEventListener('click', ()=> openCommentsModal(p.id));
+  return div;
+}
+
+async function toggleLike(postId, btn){
+  const { data: existing } = await sb.from('post_likes').select('*').eq('post_id', postId).eq('user_id', ME.id).maybeSingle();
+  const span = btn.querySelector('span');
+  const newCount = existing ? Math.max(0, (+span.textContent)-1) : (+span.textContent)+1;
+  if(existing){
+    await sb.from('post_likes').delete().eq('post_id', postId).eq('user_id', ME.id);
+    btn.classList.remove('liked');
+  } else {
+    await sb.from('post_likes').insert({ post_id: postId, user_id: ME.id });
+    btn.classList.add('liked');
+  }
+  span.textContent = newCount;
+  await sb.from('posts').update({ likes_count: newCount }).eq('id', postId);
+}
+
+function openNewPostModal(){
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `
+    <div class="modal-backdrop" onclick="if(event.target===this) this.remove()">
+      <div class="modal-sheet">
+        <h3>Nova publicação</h3>
+        <img id="postPreview" class="thumb-preview hidden">
+        <button class="btn-primary" style="margin-bottom:10px; background:var(--surface-hi); color:var(--text); display:flex; align-items:center; justify-content:center; gap:8px;" id="pickPostMedia">${ICONS.camera}Escolher foto ou vídeo</button>
+        <textarea class="field" id="postCaption" placeholder="Escreve uma legenda…" rows="3" style="margin-bottom:12px;"></textarea>
+        <button class="btn-primary" id="publishBtn">Publicar</button>
+      </div>
+    </div>`;
+  let picked = null;
+  document.getElementById('pickPostMedia').onclick = ()=>{
+    const inp = document.getElementById('fileInput');
+    inp.onchange = () => {
+      picked = inp.files[0];
+      if(picked){
+        const url = URL.createObjectURL(picked);
+        const prev = document.getElementById('postPreview');
+        prev.src = url; prev.classList.remove('hidden');
+      }
+      inp.value = '';
+    };
+    inp.click();
+  };
+  document.getElementById('publishBtn').onclick = async ()=>{
+    const caption = document.getElementById('postCaption').value.trim();
+    if(!picked && !caption){ toast('Adiciona uma foto ou legenda.'); return; }
+    document.getElementById('publishBtn').textContent = 'A publicar…';
+    let media = { url:null, thumb:null, type:null };
+    try{
+      if(picked) media = await uploadMedia(picked, 'posts', ME.id);
+      await sb.from('posts').insert({
+        user_id: ME.id, caption, media_url: media.url, media_thumb_url: media.thumb, media_type: media.type
+      });
+      document.getElementById('modalRoot').innerHTML = '';
+      toast('Publicado!');
+      loadFeed();
+    }catch(err){ toast('Erro: '+err.message); }
+  };
+}
+
+function openCommentsModal(postId){
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `
+    <div class="modal-backdrop" onclick="if(event.target===this) this.remove()">
+      <div class="modal-sheet">
+        <h3>Comentários</h3>
+        <div id="commentList" style="max-height:40vh; overflow-y:auto; margin-bottom:12px;"><div class="spinner"></div></div>
+        <div style="display:flex; gap:8px;">
+          <input class="field" id="newComment" placeholder="Escreve um comentário…">
+          <button class="icon-round" id="sendComment">${ICONS.send}</button>
+        </div>
+      </div>
+    </div>`;
+  (async ()=>{
+    const { data } = await sb.from('post_comments').select('*, profiles(display_name)').eq('post_id', postId).order('created_at');
+    const list = document.getElementById('commentList');
+    list.innerHTML = data.length ? data.map(c=>`<div style="padding:6px 0; font-size:13.5px;"><b>${esc(c.profiles.display_name)}</b> ${esc(c.content)}</div>`).join('') : '<div class="empty">Sê o primeiro a comentar.</div>';
+  })();
+  document.getElementById('sendComment').onclick = async ()=>{
+    const inp = document.getElementById('newComment');
+    const content = inp.value.trim();
+    if(!content) return;
+    await sb.from('post_comments').insert({ post_id: postId, user_id: ME.id, content });
+    await sb.from('posts').select('comments_count').eq('id', postId).single().then(async r=>{
+      await sb.from('posts').update({ comments_count:(r.data.comments_count||0)+1 }).eq('id', postId);
+    });
+    inp.value = '';
+    openCommentsModal(postId);
+  };
+}
+
+/* ============================================================
+   STORIES
+   ============================================================ */
+async function loadStories(){
+  const el = document.getElementById('screen-stories');
+  el.innerHTML = '<div class="spinner"></div>';
+  const { data, error } = await sb.from('stories')
+    .select('*, profiles(display_name, avatar_thumb_url, id)')
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending:false });
+  if(error){ el.innerHTML = '<div class="empty">Erro ao carregar stories.</div>'; return; }
+  if(!data.length){ el.innerHTML = '<div class="empty">Sem stories ativas.<br>Publica a tua primeira story.</div>'; return; }
+  const byUser = {};
+  data.forEach(s => { (byUser[s.user_id] ||= { user:s.profiles, items:[] }).items.push(s); });
+  const bar = document.createElement('div');
+  bar.className = 'stories-bar';
+  bar.style.flexWrap = 'wrap';
+  Object.values(byUser).forEach(group=>{
+    const item = document.createElement('div');
+    item.className = 'story-item';
+    item.innerHTML = `
+      <div class="story-ring"><img src="${group.user.avatar_thumb_url || avatarFallback(group.user.display_name)}"></div>
+      <span>${esc(group.user.display_name)}</span>`;
+    item.addEventListener('click', ()=> openStoryViewer(group.items));
+    bar.appendChild(item);
+  });
+  el.innerHTML = '';
+  el.appendChild(bar);
+}
+
+function openStoryViewer(items){
+  let idx = 0;
+  const root = document.getElementById('modalRoot');
+  function render(){
+    const s = items[idx];
+    root.innerHTML = `
+      <div class="modal-backdrop" style="align-items:center;" id="storyBackdrop">
+        <div style="width:100%; height:100%; display:flex; flex-direction:column;">
+          <div style="display:flex; gap:4px; padding:12px 12px 0;">
+            ${items.map((_,i)=>`<div style="flex:1; height:3px; border-radius:2px; background:${i<=idx?'var(--accent)':'rgba(255,255,255,.25)'}"></div>`).join('')}
+          </div>
+          <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:20px;">
+            ${s.media_type==='video'
+              ? `<video src="${s.media_url}" autoplay style="max-width:100%; max-height:100%; border-radius:12px;"></video>`
+              : `<img src="${s.media_url}" style="max-width:100%; max-height:100%; border-radius:12px;">`}
+          </div>
+          ${s.caption ? `<div style="text-align:center; padding:10px; color:#fff;">${esc(s.caption)}</div>` : ''}
+        </div>
+      </div>`;
+    sb.from('story_views').upsert({ story_id: s.id, viewer_id: ME.id }).then(()=>{});
+    const backdrop = document.getElementById('storyBackdrop');
+    backdrop.addEventListener('click', (e)=>{
+      const x = e.clientX, w = window.innerWidth;
+      if(x < w/2){ if(idx>0) idx--; else { root.innerHTML=''; return; } }
+      else { if(idx<items.length-1) idx++; else { root.innerHTML=''; return; } }
+      render();
+    });
+  }
+  render();
+}
+
+function openNewStoryModal(){
+  const inp = document.getElementById('fileInput');
+  inp.onchange = async ()=>{
+    const file = inp.files[0]; inp.value='';
+    if(!file) return;
+    toast('A publicar story…');
+    try{
+      const media = await uploadMedia(file, 'stories', ME.id);
+      await sb.from('stories').insert({ user_id: ME.id, media_url: media.url, media_thumb_url: media.thumb, media_type: media.type });
+      toast('Story publicada!');
+      loadStories();
+    }catch(err){ toast('Erro: '+err.message); }
+  };
+  inp.click();
+}
+
+/* ============================================================
+   CHATS (lista + 1:1 + grupos partilham a mesma view)
+   ============================================================ */
+async function loadChats(){
+  const el = document.getElementById('screen-chats');
+  el.innerHTML = '<div class="spinner"></div>';
+  const { data: memberRows } = await sb.from('chat_members').select('chat_id').eq('user_id', ME.id);
+  const chatIds = (memberRows||[]).map(r=>r.chat_id);
+  if(!chatIds.length){ el.innerHTML = '<div class="empty">Sem conversas ainda.<br>Toca em + para começar.</div>'; return; }
+  const { data: chats } = await sb.from('chats').select('*').in('id', chatIds).eq('is_group', false).order('last_message_at', { ascending:false });
+  if(!chats.length){ el.innerHTML = '<div class="empty">Sem conversas ainda.<br>Toca em + para começar.</div>'; return; }
+  el.innerHTML = '';
+  for(const c of chats){
+    const { data: others } = await sb.from('chat_members').select('profiles(id, display_name, avatar_thumb_url, is_online)').eq('chat_id', c.id).neq('user_id', ME.id);
+    const other = others?.[0]?.profiles;
+    if(!other) continue;
+    el.appendChild(renderChatRow(c, other.display_name, other.avatar_thumb_url, other.is_online, other));
+  }
+}
+
+function renderChatRow(chat, name, avatarUrl, isOnline, otherProfile){
+  const row = document.createElement('div');
+  row.className = 'chat-row';
+  row.innerHTML = `
+    <img class="avatar" src="${avatarUrl || avatarFallback(name)}">
+    <div class="meta">
+      <div class="top"><span class="name">${esc(name)}</span><span class="time">${chat.last_message_at ? timeAgo(chat.last_message_at):''}</span></div>
+      <div class="preview">${esc(chat.last_message_preview || 'Diz olá 👋')}</div>
+    </div>`;
+  row.addEventListener('click', ()=> openChatView(chat, name, avatarUrl, otherProfile));
+  return row;
+}
+
+async function openNewChatModal(){
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `
+    <div class="modal-backdrop" onclick="if(event.target===this) this.remove()">
+      <div class="modal-sheet">
+        <h3>Nova conversa</h3>
+        <input class="field" id="searchUser" placeholder="Procurar por @username…" style="margin-bottom:12px;">
+        <div id="userResults"></div>
+      </div>
+    </div>`;
+  document.getElementById('searchUser').addEventListener('input', async (e)=>{
+    const q = e.target.value.trim();
+    const results = document.getElementById('userResults');
+    if(!q){ results.innerHTML=''; return; }
+    const { data } = await sb.from('profiles').select('*').ilike('username', `%${q}%`).neq('id', ME.id).limit(15);
+    results.innerHTML = data.map(u=>`
+      <div class="row-select" data-id="${u.id}" data-name="${esc(u.display_name)}" data-avatar="${u.avatar_thumb_url||''}">
+        <img class="avatar" src="${u.avatar_thumb_url || avatarFallback(u.display_name)}">
+        <div><div style="font-weight:600;">${esc(u.display_name)}</div><div style="color:var(--muted); font-size:12px;">@${esc(u.username)}</div></div>
+      </div>`).join('') || '<div class="empty">Ninguém encontrado.</div>';
+    results.querySelectorAll('.row-select').forEach(row=>{
+      row.addEventListener('click', ()=> startDirectChat(row.dataset.id, row.dataset.name, row.dataset.avatar));
+    });
+  });
+}
+
+async function startDirectChat(otherId, otherName, otherAvatar){
+  const { data: myChats } = await sb.from('chat_members').select('chat_id').eq('user_id', ME.id);
+  const { data: theirChats } = await sb.from('chat_members').select('chat_id').eq('user_id', otherId);
+  const common = (myChats||[]).map(c=>c.chat_id).filter(id => (theirChats||[]).some(t=>t.chat_id===id));
+  let chatId = null;
+  for(const id of common){
+    const { data: chat } = await sb.from('chats').select('*').eq('id', id).eq('is_group', false).maybeSingle();
+    if(chat){ chatId = chat.id; break; }
+  }
+  if(!chatId){
+    const { data: newChat, error } = await sb.from('chats').insert({ is_group:false, created_by: ME.id }).select().single();
+    if(error){ toast('Erro: '+error.message); return; }
+    chatId = newChat.id;
+    await sb.from('chat_members').insert([{ chat_id: chatId, user_id: ME.id }, { chat_id: chatId, user_id: otherId }]);
+  }
+  document.getElementById('modalRoot').innerHTML = '';
+  const { data: chat } = await sb.from('chats').select('*').eq('id', chatId).single();
+  openChatView(chat, otherName, otherAvatar, { id: otherId });
+  nav('chats');
+}
+
+/* ---------- Grupos ---------- */
+async function loadGroups(){
+  const el = document.getElementById('screen-groups');
+  el.innerHTML = '<div class="spinner"></div>';
+  const { data: memberRows } = await sb.from('chat_members').select('chat_id').eq('user_id', ME.id);
+  const chatIds = (memberRows||[]).map(r=>r.chat_id);
+  const { data: groups } = chatIds.length
+    ? await sb.from('chats').select('*').in('id', chatIds).eq('is_group', true).order('last_message_at', { ascending:false })
+    : { data: [] };
+  if(!groups?.length){ el.innerHTML = '<div class="empty">Sem grupos ainda.<br>Toca em + para criar um.</div>'; return; }
+  el.innerHTML = '';
+  groups.forEach(g => el.appendChild(renderChatRow(g, g.name, g.avatar_url, false, null)));
+}
+
+async function openNewGroupModal(){
+  const root = document.getElementById('modalRoot');
+  const { data: allUsers } = await sb.from('profiles').select('*').neq('id', ME.id).limit(50);
+  root.innerHTML = `
+    <div class="modal-backdrop" onclick="if(event.target===this) this.remove()">
+      <div class="modal-sheet">
+        <h3>Novo grupo</h3>
+        <input class="field" id="groupName" placeholder="Nome do grupo" style="margin-bottom:12px;">
+        <div style="max-height:35vh; overflow-y:auto; margin-bottom:14px;">
+          ${allUsers.map(u=>`
+            <label class="row-select">
+              <img class="avatar" src="${u.avatar_thumb_url || avatarFallback(u.display_name)}">
+              <span>${esc(u.display_name)}</span>
+              <input type="checkbox" value="${u.id}" class="groupMember">
+            </label>`).join('')}
+        </div>
+        <button class="btn-primary" id="createGroupBtn">Criar grupo</button>
+      </div>
+    </div>`;
+  document.getElementById('createGroupBtn').onclick = async ()=>{
+    const name = document.getElementById('groupName').value.trim();
+    const members = [...document.querySelectorAll('.groupMember:checked')].map(c=>c.value);
+    if(!name || members.length === 0){ toast('Dá um nome e escolhe pelo menos 1 membro.'); return; }
+    const { data: chat, error } = await sb.from('chats').insert({ is_group:true, name, created_by: ME.id }).select().single();
+    if(error){ toast('Erro: '+error.message); return; }
+    const rows = [{ chat_id: chat.id, user_id: ME.id, role:'admin' }, ...members.map(id=>({ chat_id: chat.id, user_id: id }))];
+    await sb.from('chat_members').insert(rows);
+    document.getElementById('modalRoot').innerHTML = '';
+    toast('Grupo criado!');
+    nav('groups');
+  };
+}
+
+/* ============================================================
+   RETENÇÃO LOCAL — o Supabase é só correio, não arquivo
+   ------------------------------------------------------------
+   Fluxo: ao enviar, a mensagem (e o ficheiro, se houver) fica
+   logo guardada no IndexedDB deste aparelho. Ao chegar uma
+   mensagem de outra pessoa, este aparelho baixa o ficheiro,
+   guarda tudo localmente e só depois confirma "delivered" em
+   message_status. Quando TODOS os membros da conversa já
+   confirmaram, a mensagem e o ficheiro são apagados do Supabase
+   — o histórico completo continua a existir, mas só nos
+   telemóveis de quem participou.
+   ============================================================ */
+function chatMediaPathFromUrl(url){
+  const marker = '/object/public/chat-media/';
+  const i = url.indexOf(marker);
+  return i === -1 ? null : decodeURIComponent(url.slice(i + marker.length));
+}
+
+async function deleteChatMediaFromStorage(urls){
+  const paths = (urls||[]).filter(Boolean).map(chatMediaPathFromUrl).filter(Boolean);
+  if(paths.length) await sb.storage.from('chat-media').remove(paths).catch(()=>{});
+}
+
+async function ensureMediaCached(msg){
+  if(!msg.media_url) return null;
+  const existing = await idb.getBlob(msg.id);
+  if(existing) return existing;
+  try{
+    const res = await fetch(msg.media_url);
+    if(!res.ok) throw new Error('fetch falhou');
+    const blob = await res.blob();
+    await idb.saveBlob(msg.id, blob);
+    return blob;
+  }catch(e){ return null; }
+}
+
+async function ackDelivered(messageId){
+  await sb.from('message_status').upsert({ message_id: messageId, user_id: ME.id, status:'delivered', updated_at: new Date().toISOString() }).catch(()=>{});
+}
+
+async function receiveMessage(msg){
+  await idb.saveMessage(msg);
+  if(msg.media_url){
+    const blob = await ensureMediaCached(msg);
+    if(!blob) return; // sem rede agora — fica por confirmar, tenta-se depois
+  }
+  await ackDelivered(msg.id);
+}
+
+async function checkAndCleanup(messageId, chatId){
+  const [{ data: statuses }, { data: members }] = await Promise.all([
+    sb.from('message_status').select('user_id').eq('message_id', messageId).eq('status','delivered'),
+    sb.from('chat_members').select('user_id').eq('chat_id', chatId).neq('user_id', ME.id)
+  ]);
+  if(!members || !members.length) return;
+  const delivered = new Set((statuses||[]).map(s=>s.user_id));
+  if(!members.every(m => delivered.has(m.user_id))) return;
+  const { data: msgRow } = await sb.from('messages').select('media_url, media_thumb_url').eq('id', messageId).maybeSingle();
+  if(msgRow) await deleteChatMediaFromStorage([msgRow.media_url, msgRow.media_thumb_url]);
+  await sb.from('messages').delete().eq('id', messageId).catch(()=>{});
+}
+
+async function resweepPendingDeletions(){
+  const { data: mine } = await sb.from('messages').select('id, chat_id').eq('sender_id', ME.id);
+  (mine||[]).forEach(m => checkAndCleanup(m.id, m.chat_id));
+}
+
+/* ---------- Vista de conversa (1:1 e grupo) ---------- */
+async function openChatView(chat, name, avatarUrl, otherProfile){
+  currentChat = chat;
+  document.getElementById('chatView').classList.remove('hidden');
+  document.getElementById('chatName').textContent = name;
+  document.getElementById('chatAvatar').src = avatarUrl || avatarFallback(name);
+  document.getElementById('chatStatus').textContent = chat.is_group ? 'Grupo' : (otherProfile?.is_online ? 'Online' : 'Offline');
+  const list = document.getElementById('msgList');
+  list.innerHTML = '';
+  renderIcons(document.getElementById('chatView'));
+
+  const seen = new Set();
+  const local = await idb.getMessagesForChat(chat.id);
+  for(const m of local){ list.appendChild(await renderBubble(m)); seen.add(m.id); }
+  list.scrollTop = list.scrollHeight;
+
+  const { data: remote } = await sb.from('messages').select('*').eq('chat_id', chat.id).order('created_at', { ascending:true }).limit(80);
+  for(const m of (remote||[])){
+    if(seen.has(m.id)) continue;
+    if(m.sender_id !== ME.id) await receiveMessage(m); else await idb.saveMessage(m);
+    list.appendChild(await renderBubble(m));
+    seen.add(m.id);
+  }
+  list.scrollTop = list.scrollHeight;
+  if(!seen.size) list.innerHTML = '<div class="empty">Ainda sem mensagens.<br>Diz olá.</div>';
+
+  if(msgChannel) sb.removeChannel(msgChannel);
+  msgChannel = sb.channel('chat-'+chat.id)
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages', filter:`chat_id=eq.${chat.id}` }, async payload=>{
+      const msg = payload.new;
+      if(msg.sender_id === ME.id) return;
+      await receiveMessage(msg);
+      list.appendChild(await renderBubble(msg));
+      list.scrollTop = list.scrollHeight;
+    })
+    .subscribe();
+
+  document.getElementById('sendBtn').onclick = sendCurrentMessage;
+  document.getElementById('msgInput').onkeydown = (e)=>{
+    if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendCurrentMessage(); }
+  };
+  document.getElementById('attachBtn').onclick = ()=>{
+    const inp = document.getElementById('fileInput');
+    inp.onchange = async ()=>{
+      const file = inp.files[0]; inp.value='';
+      if(!file) return;
+      toast('A enviar…');
+      try{
+        const media = await uploadMedia(file, 'chat-media', chat.id);
+        await sendMessage({ media_url: media.url, media_thumb_url: media.thumb, media_type: media.type }, media.localBlob);
+      }catch(err){ toast('Erro: '+err.message); }
+    };
+    inp.click();
+  };
+  wireVoiceRecorder();
+}
+
+function closeChatView(){
+  document.getElementById('chatView').classList.add('hidden');
+  if(msgChannel){ sb.removeChannel(msgChannel); msgChannel = null; }
+  currentChat = null;
+  loadChats(); loadGroups();
+}
+
+async function renderBubble(m){
+  const mine = m.sender_id === ME.id;
+  const div = document.createElement('div');
+  div.className = 'bubble ' + (mine ? 'mine':'theirs');
+  let mediaHtml = '';
+  let localUrl = null;
+  if(m.media_url){
+    const blob = await idb.getBlob(m.id);
+    if(blob) localUrl = URL.createObjectURL(blob);
+    const src = localUrl || m.media_thumb_url || m.media_url;
+    if(m.media_type === 'video') mediaHtml = `<video src="${localUrl || m.media_url}" muted></video>`;
+    else if(m.media_type === 'audio') mediaHtml = `<audio controls src="${localUrl || m.media_url}"></audio>`;
+    else mediaHtml = `<img src="${src}">`;
+  }
+  div.innerHTML = `${mediaHtml}${m.content ? esc(m.content) : ''}<div class="t">${hhmm(m.created_at)}</div>`;
+  const mediaEl = div.querySelector('img,video');
+  if(mediaEl) mediaEl.addEventListener('click', async ()=>{
+    const blob = await idb.getBlob(m.id);
+    const url = blob ? URL.createObjectURL(blob) : m.media_url;
+    openLocalMediaViewer(url, m.media_type);
+  });
+  return div;
+}
+
+function openLocalMediaViewer(url, type){
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `
+    <div class="modal-backdrop" style="align-items:center; background:rgba(4,6,9,.94);" id="mediaViewerBackdrop">
+      <div style="position:absolute; top:calc(14px + var(--safe-top)); right:14px; z-index:2;">
+        <button class="icon-round" id="closeMediaViewer" style="background:rgba(255,255,255,.14);"><span data-icon="close"></span></button>
+      </div>
+      <div style="width:100%; display:flex; align-items:center; justify-content:center; padding:20px;">
+        ${type==='video'
+          ? `<video src="${url}" controls autoplay style="max-width:100%; max-height:85vh; border-radius:10px;"></video>`
+          : `<img src="${url}" style="max-width:100%; max-height:85vh; border-radius:10px;">`}
+      </div>
+    </div>`;
+  renderIcons(root);
+  document.getElementById('closeMediaViewer').onclick = ()=> root.innerHTML = '';
+  document.getElementById('mediaViewerBackdrop').addEventListener('click', e=>{ if(e.target.id==='mediaViewerBackdrop') root.innerHTML=''; });
+}
+
+async function sendMessage(extra, localBlob){
+  const content = document.getElementById('msgInput').value.trim();
+  if(!content && !extra) return;
+  const { data: inserted, error } = await sb.from('messages')
+    .insert({ chat_id: currentChat.id, sender_id: ME.id, content: content || null, ...extra })
+    .select().single();
+  if(error){ toast('Erro ao enviar: '+error.message); return; }
+  await idb.saveMessage(inserted);
+  if(localBlob) await idb.saveBlob(inserted.id, localBlob);
+  await sb.from('chats').update({
+    last_message_preview: extra?.media_url ? 'Mídia partilhada' : content,
+    last_message_at: new Date().toISOString()
+  }).eq('id', currentChat.id);
+  document.getElementById('msgInput').value = '';
+  const list = document.getElementById('msgList');
+  list.appendChild(await renderBubble(inserted));
+  list.scrollTop = list.scrollHeight;
+  checkAndCleanup(inserted.id, currentChat.id);
+}
+function sendCurrentMessage(){ sendMessage(null, null); }
+
+/* ---------- Mensagens de voz ---------- */
+let mediaRecorder = null, recordedChunks = [], isRecording = false;
+function wireVoiceRecorder(){
+  const micBtn = document.getElementById('micBtn');
+  micBtn.onclick = async ()=>{
+    if(!isRecording){
+      let stream;
+      try{ stream = await navigator.mediaDevices.getUserMedia({ audio:true }); }
+      catch(e){ toast('Sem acesso ao microfone.'); return; }
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = e => { if(e.data.size>0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = async ()=>{
+        stream.getTracks().forEach(t=>t.stop());
+        const blob = new Blob(recordedChunks, { type:'audio/webm' });
+        if(blob.size < 800){ toast('Gravação muito curta.'); return; }
+        toast('A enviar áudio…');
+        try{
+          const id = crypto.randomUUID();
+          const path = `${currentChat.id}/${id}.webm`;
+          const { error } = await sb.storage.from('chat-media').upload(path, blob, { contentType:'audio/webm' });
+          if(error) throw error;
+          const url = sb.storage.from('chat-media').getPublicUrl(path).data.publicUrl;
+          await sendMessage({ media_url:url, media_thumb_url:url, media_type:'audio' }, blob);
+        }catch(err){ toast('Erro: '+err.message); }
+      };
+      mediaRecorder.start();
+      isRecording = true;
+      micBtn.querySelector('[data-icon]').innerHTML = ICONS.stop;
+      toast('A gravar — toca outra vez para parar');
+    } else {
+      mediaRecorder.stop();
+      isRecording = false;
+      micBtn.querySelector('[data-icon]').innerHTML = ICONS.mic;
+    }
+  };
+}
+
+/* Sincronização em segundo plano: guarda mensagens que chegam
+   de outras conversas e faz a limpeza na nuvem quando todos já
+   têm cópia local. */
+function subscribeInbox(){
+  sb.channel('sync-'+ME.id)
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages' }, async payload=>{
+      const msg = payload.new;
+      if(msg.sender_id === ME.id) return;
+      await receiveMessage(msg);
+      if(!currentChat || msg.chat_id !== currentChat.id) toast('Nova mensagem');
+    })
+    .on('postgres_changes', { event:'*', schema:'public', table:'message_status' }, async payload=>{
+      const row = payload.new;
+      if(!row || row.user_id === ME.id) return;
+      const { data: msgRow } = await sb.from('messages').select('id, chat_id, sender_id').eq('id', row.message_id).maybeSingle();
+      if(msgRow && msgRow.sender_id === ME.id) checkAndCleanup(msgRow.id, msgRow.chat_id);
+    })
+    .subscribe();
+}
+
+/* ============================================================
+   PERFIL
+   ============================================================ */
+function loadProfileScreen(){
+  const el = document.getElementById('screen-profile');
+  el.innerHTML = `
+    <div style="display:flex; flex-direction:column; align-items:center; padding:30px 20px 10px;">
+      <img id="profAvatar" class="avatar" style="width:96px; height:96px; margin-bottom:12px;" src="${ME.avatar_url || avatarFallback(ME.display_name)}">
+      <button class="btn-ghost" id="changeAvatarBtn">Alterar foto</button>
+      <input class="field" id="profName" value="${esc(ME.display_name)}" style="margin:14px 0 8px; text-align:center;">
+      <div style="color:var(--muted); font-size:13px; margin-bottom:14px;">@${esc(ME.username)}</div>
+      <textarea class="field" id="profBio" placeholder="Bio" rows="2" style="margin-bottom:14px;">${esc(ME.bio||'')}</textarea>
+      <button class="btn-primary" id="saveProfileBtn" style="max-width:280px;">Guardar alterações</button>
+      <button class="btn-ghost" style="color:var(--danger); margin-top:18px;" onclick="doLogout()">Terminar sessão</button>
+    </div>`;
+  document.getElementById('saveProfileBtn').onclick = async ()=>{
+    const display_name = document.getElementById('profName').value.trim();
+    const bio = document.getElementById('profBio').value.trim();
+    await sb.from('profiles').update({ display_name, bio }).eq('id', ME.id);
+    ME.display_name = display_name; ME.bio = bio;
+    toast('Perfil atualizado!');
+  };
+  document.getElementById('changeAvatarBtn').onclick = ()=>{
+    const inp = document.getElementById('fileInput');
+    inp.onchange = async ()=>{
+      const file = inp.files[0]; inp.value='';
+      if(!file) return;
+      toast('A atualizar foto…');
+      try{
+        const media = await uploadMedia(file, 'avatars', ME.id);
+        await sb.from('profiles').update({ avatar_url: media.url, avatar_thumb_url: media.thumb }).eq('id', ME.id);
+        ME.avatar_url = media.url; ME.avatar_thumb_url = media.thumb;
+        document.getElementById('profAvatar').src = media.url;
+        document.getElementById('myAvatar').src = media.thumb;
+        toast('Foto atualizada!');
+      }catch(err){ toast('Erro: '+err.message); }
+    };
+    inp.click();
+  };
+}
+
+/* ============================================================
+   BOOT — restaura sessão se já existir
+   ============================================================ */
+(async function boot(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(session) await bootAfterAuth();
+
+  if('serviceWorker' in navigator && location.protocol !== 'file:'){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+})();
+</script>
+</body>
+</html>
