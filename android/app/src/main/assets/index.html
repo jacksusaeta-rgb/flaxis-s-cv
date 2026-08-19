@@ -657,7 +657,7 @@ async function loadFeed(reset=true){
   if(reset){ feedPage = 0; el.innerHTML = '<div class="spinner"></div>'; }
   const from = feedPage*PAGE_SIZE, to = from+PAGE_SIZE-1;
   const { data: posts, error } = await sb.from('posts')
-    .select('*, profiles(username, display_name, avatar_thumb_url, id)')
+    .select('*, profiles!posts_user_id_fkey(username, display_name, avatar_thumb_url, id)')
     .order('created_at', { ascending:false }).range(from, to);
   if(error){ el.innerHTML = `<div class="empty">Erro ao carregar feed.</div>`; return; }
   if(reset) el.innerHTML = '';
@@ -789,7 +789,7 @@ async function loadStories(){
   const el = document.getElementById('screen-stories');
   el.innerHTML = '<div class="spinner"></div>';
   const { data, error } = await sb.from('stories')
-    .select('*, profiles(display_name, avatar_thumb_url, id)')
+    .select('*, profiles!stories_user_id_fkey(display_name, avatar_thumb_url, id)')
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending:false });
   if(error){ el.innerHTML = '<div class="empty">Erro ao carregar stories.</div>'; return; }
